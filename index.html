@@ -1,0 +1,1521 @@
+<!DOCTYPE html>
+<html lang="en" data-os="mac">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Milvus + watsonx.ai RAG Lab</title>
+<link rel="icon" type="image/png" href="img/bob-favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: light;
+  --white:#ffffff;
+  --gray-10:#f4f4f4;
+  --gray-20:#e0e0e0;
+  --gray-30:#c6c6c6;
+  --gray-50:#8d8d8d;
+  --gray-70:#525252;
+  --gray-100:#161616;
+  --blue-60:#0f62fe;
+  --blue-70:#0043ce;
+  --blue-10:#edf5ff;
+  --green-60:#198038;
+  --green-50:#24a148;
+  --green-10:#defbe6;
+  --yellow-20:#fddc69;
+  --yellow-bg:#fcf4d6;
+  --red-60:#da1e28;
+  --red-10:#fff1f1;
+  --sidebar-w:280px;
+  --maxw:960px;
+  --font-sans:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;font-family:var(--font-sans);color:var(--gray-100);background:var(--white);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;}
+
+/* ---------- Top bar ---------- */
+.topbar{position:fixed;top:0;left:0;right:0;height:56px;z-index:50;background:var(--gray-100);color:var(--white);display:flex;align-items:center;justify-content:space-between;padding:0 20px;border-bottom:1px solid #000;}
+.topbar .brand{display:flex;align-items:center;gap:12px;font-weight:600;letter-spacing:-0.01em;font-size:15px;}
+.topbar .brand .tag{color:var(--gray-30);font-weight:400;}
+.topbar .brand .dot{width:10px;height:10px;background:var(--blue-60);display:inline-block;}
+.os-switch{display:flex;align-items:center;gap:0;border:1px solid var(--gray-70);}
+.os-switch button{display:inline-flex;align-items:center;gap:7px;font-family:var(--font-sans);font-size:13px;font-weight:500;background:transparent;color:var(--gray-30);border:none;padding:7px 14px;cursor:pointer;border-right:1px solid var(--gray-70);transition:background .12s,color .12s;white-space:nowrap;}
+.os-switch button:last-child{border-right:none;}
+.os-switch button:hover{background:#2a2a2a;color:var(--white);}
+.os-switch button.active{background:var(--blue-60);color:var(--white);}
+.os-switch button svg{width:14px;height:14px;fill:currentColor;flex:none;display:block;}
+.os-switch .label{display:inline-flex;align-items:center;font-size:11px;color:var(--gray-50);padding:0 12px;white-space:nowrap;text-transform:uppercase;letter-spacing:.08em;border-right:1px solid var(--gray-70);align-self:stretch;}
+
+/* ---------- Layout ---------- */
+.layout{display:flex;padding-top:56px;}
+.sidebar{position:fixed;top:56px;bottom:0;left:0;width:var(--sidebar-w);background:var(--gray-10);border-right:1px solid var(--gray-20);overflow-y:auto;padding:28px 0 60px;}
+.sidebar h2{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--gray-70);margin:0 24px 12px;font-weight:600;}
+.nav a{display:flex;gap:12px;align-items:baseline;text-decoration:none;color:var(--gray-70);padding:7px 24px;font-size:14px;border-left:3px solid transparent;line-height:1.35;}
+.nav a:hover{background:#eaeaea;color:var(--gray-100);}
+.nav a.active{border-left-color:var(--blue-60);color:var(--gray-100);background:#e8eefc;font-weight:500;}
+.nav a .n{font-family:var(--font-mono);font-size:12px;color:var(--gray-50);min-width:20px;}
+.nav a.active .n{color:var(--blue-60);}
+main{margin-left:var(--sidebar-w);flex:1;min-width:0;}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 32px 120px;}
+
+/* ---------- Hero ---------- */
+.hero{padding:72px 0 40px;border-bottom:1px solid var(--gray-20);margin-bottom:8px;}
+.hero .eyebrow{font-family:var(--font-mono);font-size:13px;color:var(--blue-60);letter-spacing:.04em;margin-bottom:18px;}
+.hero h1{font-size:52px;line-height:1.02;letter-spacing:-0.03em;margin:0 0 20px;font-weight:600;}
+.hero p.lede{font-size:19px;color:var(--gray-70);max-width:620px;margin:0 0 28px;}
+.meta-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px;margin-bottom:8px;}
+.chip{font-family:var(--font-mono);font-size:12px;background:var(--gray-10);border:1px solid var(--gray-20);padding:6px 12px;color:var(--gray-70);}
+.chip b{color:var(--gray-100);font-weight:600;}
+
+/* ---------- Sections ---------- */
+section{padding:52px 0;border-bottom:1px solid var(--gray-20);scroll-margin-top:72px;}
+.sec-eyebrow{font-family:var(--font-mono);font-size:13px;color:var(--blue-60);margin-bottom:10px;display:flex;align-items:center;gap:10px;}
+.sec-eyebrow .time{color:var(--gray-50);}
+section h2{font-size:32px;letter-spacing:-0.02em;margin:0 0 12px;font-weight:600;line-height:1.1;}
+section h3,.hero h3{font-size:18px;margin:34px 0 6px;font-weight:600;letter-spacing:-0.01em;}
+.intro{font-size:17px;color:var(--gray-70);margin:0 0 8px;max-width:640px;}
+section p,.hero p{margin:0 0 14px;}
+section ul,section ol,.hero ul,.hero ol{margin:0 0 14px;padding-left:22px;}
+section li,.hero li{margin-bottom:7px;}
+a.inline{color:var(--blue-60);text-decoration:none;border-bottom:1px solid var(--gray-30);}
+a.inline:hover{border-bottom-color:var(--blue-60);}
+code.ic{font-family:var(--font-mono);font-size:.86em;background:var(--gray-10);border:1px solid var(--gray-20);padding:1px 6px;white-space:nowrap;}
+kbd{font-family:var(--font-mono);font-size:.8em;background:var(--white);border:1px solid var(--gray-30);border-bottom-width:2px;padding:1px 6px;white-space:nowrap;}
+
+/* ---------- STEP SPINE ---------- */
+.steps{list-style:none;margin:26px 0 8px;padding:0;position:relative;}
+.step{position:relative;padding:0 0 26px 56px;}
+.step::before{content:"";position:absolute;left:16px;top:6px;bottom:-6px;width:2px;background:var(--gray-20);}
+.step:last-child::before{display:none;}
+.step .badge{position:absolute;left:0;top:-2px;width:34px;height:34px;border-radius:50%;background:var(--blue-60);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:600;font-size:15px;z-index:1;}
+.step .stitle{font-weight:600;font-size:16.5px;margin:4px 0 6px;letter-spacing:-0.01em;}
+.step p{margin:0 0 10px;}
+.step ul{margin:6px 0 10px;}
+.substeps{margin:6px 0 10px;padding-left:22px;}
+.substeps>li{margin:0 0 12px;padding-left:4px;line-height:1.55;}
+.substeps>li::marker{font-family:var(--font-mono);font-weight:600;color:var(--blue-60);}
+.substeps .cmd{margin:8px 0 2px;}
+.substeps .note{margin:8px 0 2px;}
+.step.done::before{background:var(--green-50);}
+.step.done .badge{background:var(--green-50);font-size:17px;}
+.step.done .stitle{color:var(--green-60);}
+
+/* ---------- Code blocks ---------- */
+.cmd{position:relative;background:var(--gray-100);margin:10px 0;border-left:3px solid var(--blue-60);}
+.cmd pre{margin:0;padding:15px 52px 15px 18px;overflow-x:auto;}
+.cmd code{font-family:var(--font-mono);font-size:13.5px;color:#f4f4f4;line-height:1.7;white-space:pre;}
+.cmd .copy{position:absolute;top:8px;right:8px;background:#2a2a2a;color:#c6c6c6;border:1px solid #525252;font-family:var(--font-sans);font-size:11px;padding:5px 9px;cursor:pointer;letter-spacing:.03em;}
+.cmd .copy:hover{background:#393939;color:#fff;}
+.cmd .copy.done{background:var(--green-60);color:#fff;border-color:var(--green-60);}
+.filelabel{font-family:var(--font-mono);font-size:12px;color:var(--gray-70);background:var(--gray-10);border:1px solid var(--gray-20);border-bottom:none;padding:6px 12px;display:inline-block;margin-top:8px;}
+.filelabel + .cmd{margin-top:0;}
+.runline{font-size:13px;color:var(--gray-50);margin:2px 0 4px;}
+.outlabel{display:inline-block;margin-top:8px;padding:6px 12px;background:var(--red-60);color:#fff;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;}
+.outlabel + .cmd{margin-top:0;}
+.cmd.sampleout{border-left:3px dashed var(--red-60);opacity:.92;}
+.cmd.prompt code{white-space:pre-wrap;}
+
+/* ---------- Inline critical note ---------- */
+.note{border-left:3px solid var(--yellow-20);background:var(--yellow-bg);padding:11px 15px;margin:10px 0;font-size:14.5px;}
+.note .nt{font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:#8e6a00;margin-bottom:3px;}
+.note.must{border-left-color:var(--red-60);background:var(--red-10);}
+.note.must .nt{color:var(--red-60);}
+.note p:last-child{margin-bottom:0;}
+
+/* ---------- Collapsible ---------- */
+details.fix{border:1px solid var(--gray-20);background:var(--white);margin:10px 0;}
+details.fix > summary{cursor:pointer;list-style:none;padding:10px 14px;font-size:14px;font-weight:500;color:var(--gray-70);display:flex;align-items:center;gap:9px;user-select:none;}
+details.fix > summary::-webkit-details-marker{display:none;}
+details.fix > summary .caret{font-family:var(--font-mono);color:var(--gray-50);transition:transform .15s;font-size:12px;}
+details.fix[open] > summary .caret{transform:rotate(90deg);}
+details.fix > summary .wtag{font-family:var(--font-mono);font-size:11px;color:#8e6a00;background:var(--yellow-bg);border:1px solid var(--yellow-20);padding:1px 7px;letter-spacing:.03em;}
+details.fix .fixbody{padding:2px 16px 14px 39px;font-size:14.5px;color:var(--gray-70);}
+details.fix .fixbody p{margin:0 0 10px;}
+details.tip-d{border-color:var(--blue-10);}
+details.tip-d > summary .wtag{color:var(--blue-70);background:var(--blue-10);border-color:#c9ddff;}
+
+/* ---------- Callouts ---------- */
+.callout{border-left:3px solid var(--gray-30);background:var(--gray-10);padding:14px 18px;margin:16px 0;font-size:15px;}
+.callout .ct{font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px;}
+.callout p:last-child{margin-bottom:0;}
+.callout.tip{border-left-color:var(--blue-60);background:var(--blue-10);}
+.callout.tip .ct{color:var(--blue-70);}
+
+/* ---------- Concept cards ---------- */
+.cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin:20px 0;}
+.card{border:1px solid var(--gray-20);padding:18px;background:var(--white);}
+.card .cn{font-family:var(--font-mono);font-size:12px;color:var(--blue-60);margin-bottom:8px;}
+.card h4{margin:0 0 6px;font-size:15px;}
+.card p{font-size:13.5px;color:var(--gray-70);margin:0;}
+
+/* ---------- OS-specific blocks ---------- */
+.os-block{display:none;}
+html[data-os="mac"] .os-block[data-os="mac"]{display:block;}
+html[data-os="win"] .os-block[data-os="win"]{display:block;}
+html[data-os="linux"] .os-block[data-os="linux"]{display:block;}
+html[data-os="vm"] .os-block[data-os="vm"]{display:block;}
+.osi{display:none;}
+html[data-os="mac"] .osi[data-os="mac"]{display:inline;}
+html[data-os="win"] .osi[data-os="win"]{display:inline;}
+html[data-os="linux"] .osi[data-os="linux"]{display:inline;}
+html[data-os="vm"] .osi[data-os="vm"]{display:inline;}
+.os-flag{font-family:var(--font-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--gray-50);margin:0 0 4px;display:flex;align-items:center;gap:7px;}
+.os-flag::before{content:"";width:8px;height:8px;background:var(--blue-60);display:inline-block;}
+
+/* ---------- Screenshots ---------- */
+figure.shot{margin:14px 0 16px;border:1px solid var(--gray-20);background:var(--gray-10);}
+figure.shot img{display:block;width:100%;height:auto;}
+figure.shot figcaption{font-size:12.5px;color:var(--gray-70);padding:8px 12px;border-top:1px solid var(--gray-20);background:var(--white);}
+figure.shot figcaption b{color:var(--gray-100);}
+figure.shot.narrow{max-width:640px;}
+figure.shot.tiny{max-width:440px;}
+
+/* ---------- Comparison table ---------- */
+table.vs{width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;}
+table.vs th,table.vs td{border:1px solid var(--gray-20);padding:9px 12px;text-align:left;vertical-align:top;}
+table.vs th{background:var(--gray-10);font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--gray-70);font-weight:600;}
+table.vs td.bad{background:var(--red-10);}
+table.vs td.good{background:var(--green-10);}
+
+/* ---------- Bob mascot ---------- */
+.topbar .brand .bobmark{width:28px;height:28px;object-fit:contain;display:block;margin-right:2px;}
+.hero-top{display:flex;align-items:flex-start;gap:32px;}
+.hero-copy{flex:1;min-width:0;}
+.hero-bob{width:180px;height:auto;flex:none;margin-top:4px;filter:drop-shadow(0 10px 24px rgba(0,0,0,.14));}
+.bob-say{display:flex;align-items:center;gap:16px;border-left:3px solid var(--blue-60);background:var(--blue-10);padding:14px 18px;margin:18px 0;}
+.bob-say img{width:60px;height:60px;flex:none;object-fit:contain;}
+.bob-say .ct{font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--blue-70);margin-bottom:3px;}
+.bob-say p{margin:0;font-size:15px;}
+.callout.withbob{display:flex;gap:14px;align-items:center;}
+.callout.withbob img{width:50px;height:50px;flex:none;object-fit:contain;}
+.callout.withbob > div{flex:1;min-width:0;}
+.bob-cheer{display:block;width:130px;height:auto;margin:6px auto 18px;filter:drop-shadow(0 8px 18px rgba(0,0,0,.12));}
+.certbtn{display:inline-block;background:var(--blue-60);color:var(--white);font-weight:600;font-size:15px;padding:12px 22px;text-decoration:none;transition:background .12s;}
+.certbtn:hover{background:var(--blue-70);}
+.fineprint{font-size:13px;color:var(--gray-50);margin-top:6px;}
+.author{display:flex;align-items:center;gap:12px;margin-top:22px;}
+.author-pfp{width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid var(--gray-20);flex:none;}
+.author-meta{line-height:1.35;}
+.author-name{font-weight:600;font-size:14px;}
+.author-role{font-size:13px;color:var(--gray-70);}
+.author-contact{font-size:13px;color:var(--gray-50);margin-top:2px;}
+.author-contact a{color:var(--blue-60);text-decoration:none;}
+.author-contact a:hover{text-decoration:underline;}
+.authors{display:grid;grid-template-columns:1fr;gap:18px 32px;margin-top:28px;}
+.authors .author{margin-top:0;align-items:flex-start;}
+.authors .author-contact{overflow-wrap:anywhere;}
+@media(min-width:480px){.authors .author-role{white-space:nowrap;}}
+@media(min-width:1240px){.authors{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:720px){.hero-bob{display:none;}}
+footer{color:var(--gray-50);font-size:13px;padding:32px 0 10px;}
+.mobile-only{display:none;}
+#menuBtn{display:none;}
+
+@media (max-width:960px){
+  .sidebar{transform:translateX(-100%);transition:transform .2s;z-index:40;box-shadow:2px 0 12px rgba(0,0,0,.1);}
+  .sidebar.open{transform:translateX(0);}
+  main{margin-left:0;}
+  #menuBtn{display:inline-flex;background:transparent;border:1px solid var(--gray-70);color:#fff;font-family:var(--font-sans);font-size:13px;padding:6px 12px;cursor:pointer;}
+  .cards{grid-template-columns:1fr;}
+  .hero h1{font-size:38px;}
+  .os-switch button{padding:7px 10px;}
+  .os-switch .label{display:none;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <button id="menuBtn" aria-label="Toggle navigation">Menu</button>
+    <img class="bobmark" src="img/bob-head.png" alt="Bob">
+    <span>Milvus + watsonx.ai RAG Lab</span>
+    <span class="tag">· IBM Technology Zone edition</span>
+  </div>
+</div>
+
+<div class="layout">
+<aside class="sidebar" id="sidebar">
+  <h2>Lab steps</h2>
+  <nav class="nav" id="nav">
+    <a href="#start"><span class="n">00</span><span>Welcome &amp; what you'll build</span></a>
+    <a href="#environment"><span class="n">01</span><span>Know your environment</span></a>
+    <a href="#signin"><span class="n">02</span><span>Sign in &amp; open watsonx.data</span></a>
+    <a href="#bucket"><span class="n">03</span><span>Create a Cloud Object Storage bucket</span></a>
+    <a href="#hmac"><span class="n">04</span><span>Create HMAC credentials</span></a>
+    <a href="#register"><span class="n">05</span><span>Register the storage in watsonx.data</span></a>
+    <a href="#milvus"><span class="n">06</span><span>Add the Milvus engine</span></a>
+    <a href="#apikey"><span class="n">07</span><span>Create your IBM Cloud API key</span></a>
+    <a href="#project"><span class="n">08</span><span>Open the watsonx.ai sandbox project</span></a>
+    <a href="#runtime"><span class="n">09</span><span>Associate the watsonx.ai Runtime</span></a>
+    <a href="#vectorstore"><span class="n">10</span><span>Connect the project to Milvus</span></a>
+    <a href="#collection"><span class="n">11</span><span>Create a collection &amp; upload a document</span></a>
+    <a href="#confirm"><span class="n">12</span><span>Confirm the index &amp; set Top K</span></a>
+    <a href="#promptlab"><span class="n">13</span><span>Set up Prompt Lab</span></a>
+    <a href="#ask"><span class="n">14</span><span>Ask questions &amp; save the prompt</span></a>
+    <a href="#recap"><span class="n">&#9733;</span><span>Lab recap &amp; takeaways</span></a>
+    <a href="#troubleshooting"><span class="n">&#9656;</span><span>Troubleshooting</span></a>
+  </nav>
+</aside>
+
+<main>
+<div class="wrap">
+
+<!-- ============================ HERO ============================ -->
+<div class="hero" id="start">
+  <div class="hero-top">
+    <div class="hero-copy">
+      <div class="eyebrow">HANDS-ON LAB · ~60–75 MIN (STEPS 02–12)</div>
+      <h1>Milvus + watsonx.ai RAG</h1>
+      <p class="lede">Store a document as vectors in a Milvus engine inside watsonx.data, then ask a watsonx.ai foundation model questions that it answers from your document. You build the full retrieval-augmented generation (RAG) pipeline on an IBM Technology Zone environment.</p>
+    </div>
+    <img class="hero-bob" src="img/bob.png" alt="Bob, your build buddy">
+  </div>
+
+  <div class="authors">
+    <div class="author">
+      <img class="author-pfp" src="img/Eitan-headshot.png" alt="Eitan Berger">
+      <div class="author-meta">
+        <div class="author-name">By Eitan Berger</div>
+        <div class="author-role">Customer Success Engineer · Data &amp; AI · IBM</div>
+        <div class="author-contact"><a href="mailto:eitan.berger@ibm.com">eitan.berger@ibm.com</a></div>
+      </div>
+    </div>
+    <div class="author">
+      <img class="author-pfp" src="img/Edmond-headshot.png" alt="Edmond Samaha">
+      <div class="author-meta">
+        <div class="author-name">By Edmond Samaha</div>
+        <div class="author-role">Customer Success Engineer · Data &amp; AI · IBM</div>
+        <div class="author-contact"><a href="mailto:edmond.samaha@ibm.com">edmond.samaha@ibm.com</a></div>
+      </div>
+    </div>
+    <div class="author">
+      <img class="author-pfp" src="img/Austin-headshot.png" alt="Austin Zhang">
+      <div class="author-meta">
+        <div class="author-name">By Austin Zhang</div>
+        <div class="author-role">Customer Success Engineer · Data &amp; AI · IBM</div>
+        <div class="author-contact"><a href="mailto:Austin.Zhang@ibm.com">Austin.Zhang@ibm.com</a></div>
+      </div>
+    </div>
+    <div class="author">
+      <img class="author-pfp" src="img/Thanush-headshot.jpg" alt="Thanush Arulanantham">
+      <div class="author-meta">
+        <div class="author-name">By Thanush Arulanantham</div>
+        <div class="author-role">Customer Success Engineer Intern · Data &amp; AI · IBM</div>
+        <div class="author-contact"><a href="mailto:thanush.arulanantham@ibm.com">thanush.arulanantham@ibm.com</a></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="meta-row">
+    <span class="chip"><b>Use case:</b> Q&amp;A over your own document</span>
+    <span class="chip"><b>Vector DB:</b> Milvus in watsonx.data</span>
+    <span class="chip"><b>LLM:</b> watsonx.ai Prompt Lab</span>
+    <span class="chip"><b>Region:</b> London (eu-gb)</span>
+  </div>
+
+  <div class="callout tip">
+    <div class="ct">Do this first</div>
+    <p>Make sure your IBM Technology Zone (ITZ) environment is provisioned and you can see its reservation. Step 02 shows exactly how to sign in and find your watsonx.data instance. Your instance names will differ from the examples in this guide, but the steps are identical.</p>
+  </div>
+
+  <h3>The scenario</h3>
+  <p>You have a document (for example a university policy PDF) and you want people to ask it questions in plain English and get accurate, quotable answers. A general-purpose LLM does not know your document and may answer from its training data instead.</p>
+  <p>RAG fixes that: the document is split into chunks, each chunk becomes a vector stored in Milvus, and at question time the closest chunks are retrieved and handed to the LLM as context.</p>
+
+  <h3>What you'll build — the same 3 moves for any document</h3>
+  <div class="cards">
+    <div class="card"><div class="cn">01 · STORE</div><h4>Provision Milvus</h4><p>Register object storage in watsonx.data and add a running Milvus engine.</p></div>
+    <div class="card"><div class="cn">02 · INDEX</div><h4>Vectorize a document</h4><p>Connect a watsonx.ai project to Milvus, then chunk and embed your file into a collection.</p></div>
+    <div class="card"><div class="cn">03 · ASK</div><h4>Query with an LLM</h4><p>Ground a foundation model in your vector index and ask questions in Prompt Lab.</p></div>
+  </div>
+
+  <div class="callout tip withbob">
+    <img src="img/bob-head.png" alt="Bob">
+    <div>
+      <div class="ct">No custom code, no manual vector maths</div>
+      <p>watsonx.ai chunks the document, creates the embeddings, and writes them into Milvus. Your job is to wire the services together correctly and check each result.</p>
+    </div>
+  </div>
+
+  <h3>How the phases fit together</h3>
+  <table class="vs">
+    <thead><tr><th>Phase</th><th>Steps</th><th>Goal</th></tr></thead>
+    <tbody>
+      <tr><td>1 · Provision Milvus</td><td>02–06</td><td>A running Milvus engine in watsonx.data, backed by your COS bucket</td></tr>
+      <tr><td>Before Phase 2</td><td>07</td><td>An IBM Cloud API key ready to use as the Milvus password</td></tr>
+      <tr><td>2 · watsonx.ai project</td><td>08–09</td><td>Sandbox project with the watsonx.ai Runtime associated</td></tr>
+      <tr><td>3 · Vector index</td><td>10–12</td><td>Document vectorized and stored in Milvus, Top K tuned</td></tr>
+      <tr><td>4 · Prompt Lab</td><td>13–14</td><td>Grounded Q&amp;A against your document</td></tr>
+    </tbody>
+  </table>
+
+  <h3>How to read this guide</h3>
+  <p>Every section is a numbered checklist. Do the blue numbered steps in order — that's the whole path. Each section ends on a <b style="color:var(--green-60)">green ✓ checkpoint</b> that tells you exactly what "done" looks like.</p>
+  <p>A grey <b>"⚠ Only if…"</b> bar is a fix for a problem you probably <i>won't</i> hit. Ignore it unless it matches what's on your screen.</p>
+
+  <h3>What you need</h3>
+  <ul>
+    <li>A provisioned IBM Technology Zone watsonx environment (reservation details and ITZ login)</li>
+    <li>A browser with access to <code class="ic">cloud.ibm.com</code> and <code class="ic">dataplatform.cloud.ibm.com</code></li>
+    <li>One document to index — a simple 1–5 page PDF is recommended (PDF, DOCX, PPTX, TXT, JSON, HTML, CSV, YAML, XML and XLSX are supported)</li>
+    <li>A text file or notes app to keep copied values (bucket name, keys, host, port)</li>
+  </ul>
+
+  <div class="callout withbob">
+    <img src="img/bob-head.png" alt="Bob">
+    <div>
+      <div class="ct">Stuck? Check the troubleshooting section</div>
+      <p>Most problems in this lab are a wrong region, a mismatched endpoint, or the wrong kind of password. The <a class="inline" href="#troubleshooting">Troubleshooting</a> section covers each one.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================ 01 ENVIRONMENT ============================ -->
+<section id="environment">
+  <div class="sec-eyebrow">STEP 01 <span class="time">· know your environment</span></div>
+  <h2>Know your environment</h2>
+  <p class="intro">Your ITZ environment provisions several services automatically. Know what each one is for before you start clicking.</p>
+
+  <table class="vs">
+    <thead><tr><th>Service</th><th>Found in Resource list under</th><th>What it's for</th></tr></thead>
+    <tbody>
+      <tr><td><b>watsonx.data</b></td><td>Databases</td><td>Hosts the Milvus vector engine</td></tr>
+      <tr><td><b>watsonx.ai Runtime</b></td><td>AI / Machine Learning</td><td>Runs embedding models and LLMs</td></tr>
+      <tr><td><b>watsonx.ai Studio</b></td><td>AI / Machine Learning</td><td>The project workspace UI</td></tr>
+      <tr><td><b>Cloud Object Storage</b></td><td>Storage</td><td>Storage backend for Milvus</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note must">
+    <div class="nt">Critical — Region</div>
+    <p>All your ITZ services are in <b>London (eu-gb)</b>. Every time you log into the watsonx.ai portal, confirm the region selector in the top-right corner shows <b>"London"</b>. If it shows Dallas or any other region, your services will not be visible and dropdowns will appear empty.</p>
+  </div>
+
+  <ol class="steps">
+    <li class="step">
+      <span class="badge">1</span>
+      <div class="stitle">Start a notes file</div>
+      <p>You will copy several values during the lab. Create a notes file now with these headings: <code class="ic">bucket name</code>, <code class="ic">bucket region</code>, <code class="ic">access_key_id</code>, <code class="ic">secret_access_key</code>, <code class="ic">endpoint</code>, <code class="ic">GRPC host</code>, <code class="ic">GRPC port</code>, <code class="ic">SSL certificate</code>, <code class="ic">API key</code>.</p>
+    </li>
+    <li class="step done">
+      <span class="badge">✓</span>
+      <div class="stitle">Checkpoint — you know the four services and the region rule</div>
+      <p>You know that every service lives in London and where each one is listed. Continue to Step 02.</p>
+    </li>
+  </ol>
+</section>
+
+<!-- ============================ 02 SIGN IN ============================ -->
+<section id="signin">
+  <div class="sec-eyebrow">STEP 02 <span class="time">· PHASE 1 · ~5 min</span></div>
+  <h2>Sign in &amp; open the watsonx.data console</h2>
+  <p class="intro">Sign in to IBM Cloud with your ITZ account, find your watsonx.data instance in the Resource list, and open its admin console.</p>
+
+  <ol class="steps">
+    <li class="step">
+      <span class="badge">1</span>
+      <div class="stitle">Open your ITZ environment</div>
+      <p>Open the environment link from your IBM Technology Zone reservation (link to be added). Use the IBM Cloud login details shown in your reservation. Your username is your ITZ email address, which looks like <code class="ic">student_lgrfa94k_XXXXXXXX@techzone.ibm.com</code>.</p>
+      <figure class="shot narrow">
+        <!-- swap in: <img src="img/02-itz-reservation.png" alt="IBM Technology Zone reservation page showing the link to the IBM Cloud environment"> -->
+        <div role="img" aria-label="IBM Technology Zone reservation page showing the link to the IBM Cloud environment" style="height:240px;"></div>
+        <figcaption>Screenshot placeholder: the <b>ITZ reservation</b> page with the link and login details for the environment.</figcaption>
+      </figure>
+    </li>
+    <li class="step">
+      <span class="badge">2</span>
+      <div class="stitle">Go to the Resource list</div>
+      <p>Go to <a class="inline" href="https://cloud.ibm.com/resources">cloud.ibm.com/resources</a>. If you are already in the IBM Cloud console, click the <b>☰ navigation menu</b> (top left) and choose <b>Resource list</b> — not Databases.</p>
+      <div class="note must">
+        <div class="nt">Use "Resource list"</div>
+        <p>Always reach your services through <b>Resource list</b> in the side menu. Every service in this lab (watsonx.data, Cloud Object Storage, watsonx.ai Runtime) is listed there under its own section.</p>
+      </div>
+      <figure class="shot narrow">
+        <!-- swap in: <img src="img/02-resource-list-menu.png" alt="IBM Cloud navigation menu with Resource list highlighted"> -->
+        <div role="img" aria-label="IBM Cloud navigation menu with Resource list highlighted" style="height:240px;"></div>
+        <figcaption>Screenshot placeholder: the <b>navigation menu</b> with <b>Resource list</b> highlighted.</figcaption>
+      </figure>
+    </li>
+    <li class="step">
+      <span class="badge">3</span>
+      <div class="stitle">Find your watsonx.data instance</div>
+      <p>On the Resource list page, expand the <b>Databases</b> section. Find your watsonx.data instance, named something like <code class="ic">itz-wxdata-XXXXXXXX-lgrfa94k</code>, and click the instance name to open its details page.</p>
+    </li>
+    <li class="step">
+      <span class="badge">4</span>
+      <div class="stitle">Click "Open web console"</div>
+      <p>On the instance details page, click <b>Open web console</b>.</p>
+      <div class="note must">
+        <div class="nt">Important</div>
+        <p>Click <b>"Open web console"</b> — NOT <b>"Launch in watsonx"</b>. "Launch in watsonx" takes you to a data query interface. "Open web console" opens the watsonx.data admin console where Infrastructure Manager lives.</p>
+      </div>
+      <figure class="shot narrow">
+        <!-- swap in: <img src="img/02-open-web-console.png" alt="watsonx.data instance details page with the Open web console button highlighted"> -->
+        <div role="img" aria-label="watsonx.data instance details page with the Open web console button highlighted" style="height:240px;"></div>
+        <figcaption>Screenshot placeholder: the instance page with <b>Open web console</b> highlighted (and <b>Launch in watsonx</b> not used).</figcaption>
+      </figure>
+    </li>
+    <li class="step done">
+      <span class="badge">✓</span>
+      <div class="stitle">Checkpoint — the watsonx.data web console is open</div>
+      <p>You can see the watsonx.data admin console with <b>Infrastructure Manager</b> in the left sidebar. Keep this tab open. Continue to Step 03.</p>
+    </li>
+  </ol>
+</section>
+
+<!-- ============================ 03 BUCKET ============================ -->
+<section id="bucket">
+  <div class="sec-eyebrow">STEP 03 <span class="time">· PHASE 1</span></div>
+  <h2>Create a Cloud Object Storage bucket</h2>
+  <p class="intro">Milvus (Starter size and above) needs external object storage. You create a bucket in your ITZ Cloud Object Storage (COS) instance and register it in watsonx.data in a later step.</p>
+
+  <ol class="steps">
+    <li class="step">
+      <span class="badge">1</span>
+      <div class="stitle">Open a new tab on the Resource list</div>
+      <p>Open a <b>new browser tab</b> and go to <a class="inline" href="https://cloud.ibm.com/resources">cloud.ibm.com/resources</a> (the Resource list).</p>
+    </li>
+    <li class="step">
+      <span class="badge">2</span>
+      <div class="stitle">Open your COS instance</div>
+      <ol class="substeps">
+        <li>On the Resource list page, expand the <b>Storage</b> section.</li>
+        <li>Click your Cloud Object Storage instance name, named something like <code class="ic">itz-cos-XXXXXXXX-lgrfa94k</code>.</li>
+        <li>You are now on the COS instance page. The left sidebar lists <b>Buckets</b>, <b>Endpoints</b>, <b>Service credentials</b> and more. You will use all three over the next steps.</li>
+      </ol>
+      <figure class="shot narrow">
+        <!-- swap in: <img src="img/03-cos-instance-page.png" alt="Cloud Object Storage instance page with the left sidebar showing Buckets, Endpoints and Service credentials"> -->
+        <div role="img" aria-label="Cloud Object Storage instance page with the left sidebar showing Buckets, Endpoints and Service credentials" style="height:240px;"></div>
+        <figcaption>Screenshot placeholder: the <b>COS instance page</b> and its left sidebar.</figcaption>
+      </figure>
+    </li>
+    <li class="step">
+      <span class="badge">3</span>
+      <div class="stitle">Start creating a bucket</div>
+      <p>Click <b>Buckets</b> in the left sidebar, then click <b>Create bucket</b> (top right).</p>
+    </li>
+    <li class="step">
+      <span class="badge">4</span>
+      <div class="stitle">Choose "Create a custom bucket" (or "Quickly get started")</div>
+      <p>Choose <b>Create a custom bucket</b> (or <b>Quickly get started</b>). Do not choose "Quickly create a bucket".</p>
+      <figure class="shot narrow">
+        <!-- swap in: <img src="img/03-create-bucket-options.png" alt="Create bucket page showing the Quickly get started option"> -->
+        <div role="img" aria-label="Create bucket page showing the Quickly get started option" style="height:240px;"></div>
+        <figcaption>Screenshot placeholder: the <b>Create bucket</b> options with <b>Create a custom bucket</b> and <b>Quickly get started</b> highlighted.</figcaption>
+      </figure>
+    </li>
+    <li class="step">
+      <span class="badge">5</span>
+      <div class="stitle">Name and create the bucket</div>
+      <ol class="substeps">
+        <li>Give the bucket a simple lowercase name, for example:
+          <div class="cmd"><pre><code>milvus-poc-bucket</code></pre></div>
+        </li>
+        <li>Click <b>Create bucket</b>.</li>
+        <li>If you are asked to upload files, click <b>Next</b> to skip. Files are added later through watsonx.ai.</li>
+        <li>Write the bucket name in your notes file.</li>
+      </ol>
+    </li>
+    <li class="step">
+      <span class="badge">6</span>
+      <div class="stitle">Go back to the COS instance page</div>
+      <p>Once the bucket exists you land on the bucket page. To continue, return to the COS instance page: use the <b>Cloud Object Storage</b> link at the top of the page, or go to <b>Resource list → Storage → your COS instance</b> again. The next steps start from the COS instance page.</p>
+    </li>
+    <li class="step">
+      <span class="badge">7</span>
+      <div class="stitle">Check the bucket's real region</div>
+      <p>The bucket may default to a US region (for example Washington DC / <code class="ic">us-east</code>) even though your COS instance is in London. Find the actual region:</p>
+      <ol class="substeps">
+        <li>On the COS instance page click <b>Buckets</b>, then click your bucket name.</li>
+        <li>Click the <b>Configuration</b> tab.</li>
+        <li>Read the <b>Location</b> field — for example <code class="ic">us-east</code> or <code class="ic">eu-gb</code>. Write it in your notes file as <code class="ic">bucket region</code>.</li>
+      </ol>
+      <div class="note must">
+        <div class="nt">Important — bucket region</div>
+        <p>The bucket's region decides which endpoint URL you use in Step 05. A mismatch is the most common reason the storage test connection fails.</p>
+      </div>
+      <figure class="shot narrow">
+        <!-- swap in: <img src="img/03-bucket-location.png" alt="Bucket Configuration tab showing the Location field"> -->
+        <div role="img" aria-label="Bucket Configuration tab showing the Location field" style="height:240px;"></div>
+        <figcaption>Screenshot placeholder: the bucket's <b>Configuration</b> tab with the <b>Location</b> field highlighted.</figcaption>
+      </figure>
+    </li>
+    <li class="step done">
+      <span class="badge">✓</span>
+      <div class="stitle">Checkpoint — a bucket exists and you know its name and region</div>
+      <p>Your notes file has the bucket name and bucket region. Continue to Step 04.</p>
+    </li>
+  </ol>
+</section>
+
+<!-- ============================ 04 HMAC ============================ -->
+<section id="hmac">
+  <div class="sec-eyebrow">STEP 04 <span class="time">· PHASE 1</span></div>
+  <h2>Create HMAC credentials</h2>
+  <p class="intro">watsonx.data connects to COS using S3-compatible access and secret keys (HMAC), not IAM keys.</p>
+
+  <ol class="steps">
+    <li class="step">
+      <span class="badge">1</span>
+      <div class="stitle">Open Service credentials</div>
+      <p>From the <b>COS instance page</b> (Resource list → Storage → your COS instance), click <b>Service credentials</b> in the left sidebar.</p>
+    </li>
+    <li class="step">
+      <span class="badge">2</span>
+      <div class="stitle">Check for existing HMAC keys</div>
+      <p>If a credential already exists, expand it and look for a <code class="ic">cos_hmac_keys</code> section containing <code class="ic">access_key_id</code> and <code class="ic">secret_access_key</code>. If you find them, skip to step 4 below (copy the two keys).</p>
+    </li>
+    <li class="step">
+      <span class="badge">3</span>
+      <div class="stitle">Create a new credential (if none have HMAC keys)</div>
+      <ol class="substeps">
+        <li>Click <b>New credential</b>.</li>
+        <li><b>Name:</b> anything, for example <code class="ic">milvus-hmac-creds</code></li>
+        <li><b>Role:</b> <code class="ic">Writer</code></li>
+        <li><b>Include HMAC Credential:</b> toggle <b>ON</b> ✅</li>
+        <li><b>Control by Secrets Manager:</b> toggle <b>OFF</b> ✅</li>
+        <li>Click <b>Add</b>.</li>
+      </ol>
+      <div class="note must">
+        <div class="nt">Control by Secrets Manager must be OFF</div>
+        <p>Toggle <b>Control by Secrets Manager</b> to <b>OFF</b> and leave it off, or you will get an error when you click Add.</p>
+      </div>
+      <div class="note must">
+        <div class="nt">The HMAC toggle is mandatory</div>
+        <p>Without <b>Include HMAC Credential</b> switched on, the credential only contains IAM keys, not the S3-compatible access and secret keys that watsonx.data needs to connect to COS.</p>
+      </div>
+      <figure class="shot narrow">
+        <!-- swap in: <img src="img/04-new-credential-form.png" alt="New credential form with Include HMAC Credential on and Control by Secrets Manager off"> -->
+        <div role="img" aria-label="New credential form with Include HMAC Credential on and Control by Secrets Manager off" style="height:240px;"></div>
+        <figcaption>Screenshot placeholder: the <b>New credential</b> form — <b>Include HMAC Credential</b> ON, <b>Control by Secrets Manager</b> OFF.</figcaption>
+      </figure>
+    </li>
+    <li class="step">
+      <span class="badge">4</span>
+      <div class="stitle">Copy the two keys</div>
+      <p>Expand the new credential and copy these into your notes file:</p>
+      <ul>
+        <li><code class="ic">access_key_id</code> — this is your <b>Access key</b></li>
+        <li><code class="ic">secret_access_key</code> — this is your <b>Secret key</b></li>
+      </ul>
+    </li>
+    <li class="step done">
+      <span class="badge">✓</span>
+      <div class="stitle">Checkpoint — you have an access key and a secret key</div>
+      <p>Both values are in your notes file. Continue to Step 05.</p>
+    </li>
+  </ol>
+</section>
+
+<!-- ============================ 05 REGISTER ============================ -->
+<section id="register">
+  <div class="sec-eyebrow">STEP 05 <span class="time">· PHASE 1</span></div>
+  <h2>Register the storage in watsonx.data</h2>
+  <p class="intro">Find the S3 endpoint that matches your bucket's region, then register the bucket in Infrastructure Manager.</p>
+
+  <h3>Which endpoint matches my bucket?</h3>
+  <table class="vs">
+    <thead><tr><th>Bucket region</th><th>Endpoint URL to use</th></tr></thead>
+    <tbody>
+      <tr><td>Washington DC (<code class="ic">us-east</code>)</td><td><code class="ic">https://s3.us-east.cloud-object-storage.appdomain.cloud</code></td></tr>
+      <tr><td>London (<code class="ic">eu-gb</code>)</td><td><code class="ic">https://s3.eu-gb.cloud-object-storage.appdomain.cloud</code></td></tr>
+      <tr><td>US South (<code class="ic">us-south</code>)</td><td><code class="ic">https://s3.us-south.cloud-object-storage.appdomain.cloud</code></td></tr>
+      <tr><td>EU Cross-region (<code class="ic">eu-geo</code>)</td><td><code class="ic">https://s3.eu.cloud-object-storage.appdomain.cloud</code></td></tr>
+    </tbody>
+  </table>
+
+  <div class="note must">
+    <div class="nt">Do NOT use the "endpoints" URL from the credential JSON</div>
+    <p>The credential JSON shows <code class="ic">https://control.cloud-object-storage.cloud.ibm.com/v2/endpoints</code>. That is a directory listing URL, not the actual S3 endpoint.</p>
+  </div>
+
+  <details class="fix tip-d">
+    <summary><span class="caret">▶</span><span class="wtag">💡 Confirm the exact endpoint</span> optional double-check</summary>
+    <div class="fixbody">
+      <p>On your COS instance page click <b>Endpoints</b> in the left sidebar. Set <b>Resiliency</b> to <code class="ic">Regional</code> and <b>Location</b> to your bucket's region, then copy the <b>Public</b> endpoint.</p>
+    </div>
+  </details>
+
+  <ol class="steps">
+    <li class="step">
+      <span class="badge">1</span>
+      <div class="stitle">Pick your endpoint</div>
+      <p>Using the <code class="ic">bucket region</code> from Step 03, copy the matching URL from the table above into your notes file as <code class="ic">endpoint</code>.</p>
+    </li>
+    <li class="step">
+      <span class="badge">2</span>
+      <div class="stitle">Open Infrastructure Manager</div>
+      <ol class="substeps">
+        <li>Go back to the <b>watsonx.data web console</b> tab from Step 02.</li>
+        <li>Click <b>Infrastructure Manager</b> in the left sidebar.</li>
+        <li>Click <b>Add component</b> (top right).</li>
+        <li>Select <b>IBM Cloud Object Storage</b> and click <b>Next</b>.</li>
+      </ol>
+    </li>
+    <li class="step">
+      <span class="badge">3</span>
+      <div class="stitle">Fill in the fields — in this order</div>
+      <ol class="substeps">
+        <li><b>Display name:</b> anything, for example <code class="ic">My-cos-mun</code></li>
+        <li><b>Bucket name:</b> the exact bucket name you created, for example <code class="ic">milvus-poc-bucket</code></li>
+        <li><b>Region:</b> select the region that matches your bucket</li>
+        <li><b>Endpoint:</b> the endpoint URL for that same region</li>
+        <li><b>Access key:</b> paste your <code class="ic">access_key_id</code></li>
+        <li><b>Secret key:</b> paste your <code class="ic">secret_access_key</code></li>
+      </ol>
+      <div class="note">
+        <div class="nt">Region before endpoint</div>
+        <p>Choose the <b>Region</b> first, then enter the <b>Endpoint</b>. The two must describe the same location as your bucket.</p>
+      </div>
+      <figure class="shot narrow">
+        <!-- swap in: <img src="img/05-add-cos-form.png" alt="Add component form for IBM Cloud Object Storage in watsonx.data"> -->
+        <div role="img" aria-label="Add component form for IBM Cloud Object Storage in watsonx.data" style="height:240px;"></div>
+        <figcaption>Screenshot placeholder: the <b>IBM Cloud Object Storage</b> form with region and endpoint filled in.</figcaption>
+      </figure>
+    </li>
+    <li class="step">
+      <span class="badge">4</span>
+      <div class="stitle">Test the connection, then associate</div>
+      <p>Click <b>Test connection</b>. If it succeeds, click <b>Associate</b>.</p>
+      <details class="fix">
+        <summary><span class="caret">▶</span><span class="wtag">⚠ Only if</span> Test connection fails</summary>
+        <div class="fixbody">
+          <p>Double-check that the bucket name, region and endpoint match your bucket exactly. The most common cause of failure is a mismatch between the bucket's actual region and the endpoint or region you entered.</p>
+        </div>
+      </details>
+    </li>
+    <li class="step done">
+      <span class="badge">✓</span>
+      <div class="stitle">Checkpoint — your storage is registered</div>
+      <p>The COS storage appears in Infrastructure Manager (for example as <code class="ic">My-cos-mun</code>). Continue to Step 06.</p>
+    </li>
+  </ol>
+</section>
+
+<!-- ============================ 06 MILVUS ============================ -->
+<section id="milvus">
+  <div class="sec-eyebrow">STEP 06 <span class="time">· PHASE 1 · ~2–5 min wait</span></div>
+  <h2>Add the Milvus engine</h2>
+  <p class="intro">Create the Milvus vector database engine in watsonx.data and keep its connection details.</p>
+
+  <ol class="steps">
+    <li class="step">
+      <span class="badge">1</span>
+      <div class="stitle">Add the component</div>
+      <p>In <b>Infrastructure Manager</b>, click <b>Add component</b> (top right), select <b>Milvus</b> and click <b>Next</b>.</p>
+    </li>
+    <li class="step">
+      <span class="badge">2</span>
+      <div class="stitle">Fill in the form</div>
+      <ol class="substeps">
+        <li><b>Display name:</b> anything, for example <code class="ic">my-milvus-MUN</code></li>
+        <li><b>Size:</b> <b>Starter</b> (suitable for a POC — supports up to 1 million vectors)</li>
+        <li><b>Storage</b> dropdown: select the COS storage you registered, for example <code class="ic">My-cos-mun</code></li>
+        <li><b>Path:</b> type <code class="ic">milvus</code> (watsonx.data appends a unique service ID automatically)</li>
+      </ol>
+      <div class="note">
+        <div class="nt">Why Starter and not Lite?</div>
+        <p>In ITZ environments the free Lite size is not available. Starter is the smallest available size and uses Resource Units (RUs) from your ITZ allocation, not your personal credit card.</p>
+      </div>
+    </li>
+    <li class="step">
+      <span class="badge">3</span>
+      <div class="stitle">Create and wait</div>
+      <p>Click <b>Create</b>. Wait roughly 2–5 minutes until the Milvus status shows <b>Running</b> ✅.</p>
+    </li>
+    <li class="step">
+      <span class="badge">4</span>
+      <div class="stitle">Save the connection details</div>
+      <ol class="substeps">
+        <li>Click your Milvus tile in Infrastructure Manager.</li>
+        <li>Click <b>View connect details</b>.</li>
+        <li>Copy into your notes file:
+          <ul>
+            <li><b>GRPC host</b> — a long UUID-format hostname ending in <code class="ic">.lakehouse.cloud.ibm.com</code></li>
+            <li><b>GRPC port</b> — typically <code class="ic">31775</code></li>
+            <li><b>SSL Certificate</b> — the full <code class="ic">-----BEGIN CERTIFICATE-----</code> block. You can use <b>Copy JSON snippet</b> or <b>Export JSON</b> to capture everything at once.</li>
+          </ul>
+        </li>
+      </ol>
+      <figure class="shot narrow">
+        <!-- swap in: <img src="img/06-milvus-connect-details.png" alt="Milvus connect details dialog showing GRPC host, port and SSL certificate"> -->
+        <div role="img" aria-label="Milvus connect details dialog showing GRPC host, port and SSL certificate" style="height:240px;"></div>
+        <figcaption>Screenshot placeholder: the Milvus <b>View connect details</b> panel with host, port and certificate.</figcaption>
+      </figure>
+    </li>
+    <li class="step done">
+      <span class="badge">✓</span>
+      <div class="stitle">Checkpoint — Milvus is Running and you have its connect details</div>
+      <p>Phase 1 is complete. Continue to Step 07.</p>
+    </li>
+  </ol>
+</section>
+
+<!-- ============================ 07 API KEY ============================ -->
+<section id="apikey">
+  <div class="sec-eyebrow">STEP 07 <span class="time">· BEFORE PHASE 2</span></div>
+  <h2>Create your IBM Cloud API key</h2>
+  <p class="intro">The Milvus connection in Step 10 uses an IBM Cloud API key as its password. Create it now so it is ready.</p>
+
+  <div class="note must">
+    <div class="nt">You must create an API key</div>
+    <p>You cannot complete the Milvus connection without a new API key. Do <b>not</b> reuse the pre-existing <code class="ic">cpd-apikey-...</code> key — it is a system key managed by Watson Studio and must not be used.</p>
+  </div>
+
+  <ol class="steps">
+    <li class="step">
+      <span class="badge">1</span>
+      <div class="stitle">Open the API keys page</div>
+      <p>Go to <a class="inline" href="https://cloud.ibm.com/iam/apikeys">cloud.ibm.com/iam/apikeys</a>.</p>
+    </li>
+    <li class="step">
+      <span class="badge">2</span>
+      <div class="stitle">Create the key</div>
+      <ol class="substeps">
+        <li>Click <b>Create</b>.</li>
+        <li>Name it, for example <code class="ic">milvus-poc-key</code>.</li>
+        <li><b>Control by Secrets Manager:</b> toggle <b>OFF</b>.</li>
+        <li><b>Role:</b> <code class="ic">Writer</code>.</li>
+        <li>Create the key.</li>
+      </ol>
+    </li>
+    <li class="step">
+      <span class="badge">3</span>
+      <div class="stitle">Copy the key immediately</div>
+      <p>Copy the key value into your notes file as <code class="ic">API key</code>. It is shown only once and cannot be retrieved later.</p>
+      <div class="note">
+        <div class="nt">API key vs IAM token</div>
+        <p>The password you will use is a short IBM Cloud API key (typically 44 characters of letters, numbers, hyphens and underscores). It is NOT an IAM token — a very long string with dots that starts with <code class="ic">eyJ...</code>.</p>
+      </div>
+    </li>
+    <li class="step done">
+      <span class="badge">✓</span>
+      <div class="stitle">Checkpoint — a new API key is saved in your notes</div>
+      <p>The key is a short string, not a JWT. Continue to Step 08.</p>
+    </li>
+  </ol>
+</section>
+
+<!-- ============================ 08 PROJECT ============================ -->
+<section id="project">
+  <div class="sec-eyebrow">STEP 08 <span class="time">· PHASE 2</span></div>
+  <h2>Open the watsonx.ai sandbox project</h2>
+  <p class="intro">Use the pre-provisioned sandbox project in the correct portal and region. A project of the wrong type has no foundation-model tools.</p>
+
+  <ol class="steps">
+    <li class="step">
+      <span class="badge">1</span>
+      <div class="stitle">Go to the watsonx.ai portal</div>
+      <p>Go to <a class="inline" href="https://dataplatform.cloud.ibm.com/wx/home">dataplatform.cloud.ibm.com/wx/home</a>.</p>
+      <div class="note">
+        <div class="nt">Check you're in the right place</div>
+        <p>This is not IBM Cloud Pak for Data. If the top navigation bar shows links like <b>Foundation models</b>, <b>Projects</b> and <b>Deployments</b>, you are in the right place.</p>
+      </div>
+    </li>
+    <li class="step">
+      <span class="badge">2</span>
+      <div class="stitle">Set the region to London</div>
+      <p>Check the region selector in the top-right corner. It must show <b>London</b>. If it shows anything else, click it and switch to London before continuing.</p>
+      <figure class="shot narrow">
+        <!-- swap in: <img src="img/08-region-selector.png" alt="watsonx portal top bar with the region selector showing London"> -->
+        <div role="img" aria-label="watsonx portal top bar with the region selector showing London" style="height:240px;"></div>
+        <figcaption>Screenshot placeholder: the top-right <b>region selector</b> set to <b>London</b>.</figcaption>
+      </figure>
+    </li>
+    <li class="step">
+      <span class="badge">3</span>
+      <div class="stitle">Open the sandbox project</div>
+      <p>In your Projects list, open the pre-existing sandbox project. Its name looks like:</p>
+      <div class="cmd noncopy"><pre><code>student_lgrfa94k_XXXXXXXXXXXXXXXX@techzone.ibm.com's sandbox</code></pre></div>
+      <p>Use this project — do not create a new one.</p>
+      <div class="note must">
+        <div class="nt">Do NOT use a Cloud Pak for Data project</div>
+        <p>Projects created from IBM Cloud Pak for Data (the non-<code class="ic">/wx/</code> URL) are Watson Studio type. They show options like "Build ML models automatically", "Visual flow" and "Notebooks" but NOT "Ground gen AI with vectorized documents". If you only see those options, you are in the wrong project type.</p>
+      </div>
+    </li>
+    <li class="step done">
+      <span class="badge">✓</span>
+      <div class="stitle">Checkpoint — you are in the sandbox project, region London</div>
+      <p>Continue to Step 09.</p>
+    </li>
+  </ol>
+</section>
+
+<!-- ============================ 09 RUNTIME ============================ -->
+<section id="runtime">
+  <div class="sec-eyebrow">STEP 09 <span class="time">· PHASE 2</span></div>
+  <h2>Associate the watsonx.ai Runtime</h2>
+  <p class="intro">This step is mandatory. Without it, the "watsonx.data Milvus" vector store option is visible but greyed out in Step 10.</p>
+
+  <div class="note must">
+    <div class="nt">Do Part A before Part B</div>
+    <p>In ITZ environments the Runtime service will not appear, or will have a greyed-out checkbox, in the Associate service list until it has been launched into the watsonx context at least once. Do not skip Part A.</p>
+  </div>
+
+  <h3>Part A — Pre-register the Runtime (do this first)</h3>
+  <ol class="steps">
+    <li class="step">
+      <span class="badge">1</span>
+      <div class="stitle">Find the Runtime in the Resource list</div>
+      <ol class="substeps">
+        <li>Go to <a class="inline" href="https://cloud.ibm.com/resources">cloud.ibm.com/resources</a> (Resource list).</li>
+        <li>Expand <b>AI / Machine Learning</b> by clicking the arrow on the left.</li>
+        <li>Find the row for your watsonx.ai Runtime:
+          <ul>
+            <li><b>Name:</b> <code class="ic">itz-ml-XXXXXXXX-lgrfa94k</code></li>
+            <li><b>Product:</b> <code class="ic">watsonx.ai Runtime</code></li>
+            <li><b>Location:</b> <code class="ic">London (eu-gb)</code></li>
+          </ul>
+        </li>
+      </ol>
+    </li>
+    <li class="step">
+      <span class="badge">2</span>
+      <div class="stitle">Open the instance and launch it in IBM watsonx</div>
+      <ol class="substeps">
+        <li>Click the instance name as a hyperlink (the blue underlined text in the Name column). Hovering shows a tooltip with the full name.</li>
+        <li>On the instance details page, find the <b>Launch in</b> button (it may be a dropdown with an arrow). Open the dropdown and select <b>IBM watsonx</b>.</li>
+        <li>You are redirected to <a class="inline" href="https://dataplatform.cloud.ibm.com/wx/home">dataplatform.cloud.ibm.com/wx/home</a>.</li>
+      </ol>
+      <div class="note">
+        <div class="nt">That's all Part A needs</div>
+        <p>Being redirected to the watsonx home page is enough. The Runtime is now registered in the correct context. Do nothing further on that page.</p>
+      </div>
+      <figure class="shot narrow">
+        <!-- swap in: <img src="img/09-launch-in-watsonx.png" alt="watsonx.ai Runtime instance page with the Launch in dropdown open and IBM watsonx selected"> -->
+        <div role="img" aria-label="watsonx.ai Runtime instance page with the Launch in dropdown open and IBM watsonx selected" style="height:240px;"></div>
+        <figcaption>Screenshot placeholder: the <b>Launch in</b> dropdown with <b>IBM watsonx</b> selected.</figcaption>
+      </figure>
+    </li>
+  </ol>
+
+  <h3>Part B — Associate the Runtime with your project</h3>
+  <ol class="steps">
+    <li class="step">
+      <span class="badge">1</span>
+      <div class="stitle">Open Services &amp; integrations</div>
+      <ol class="substeps">
+        <li>Go back to your sandbox project and click the <b>Manage</b> tab (top navigation bar).</li>
+        <li>Click <b>Services &amp; integrations</b> in the left sidebar.</li>
+        <li>Click <b>Associate service</b> (blue button, top right).</li>
+      </ol>
+    </li>
+    <li class="step">
+      <span class="badge">2</span>
+      <div class="stitle">Associate the Runtime</div>
+      <ol class="substeps">
+        <li>The list now shows your watsonx.ai Runtime instance (<code class="ic">itz-ml-XXXXXXXX-lgrfa94k</code>) with a checkable checkbox ✅.</li>
+        <li>Check the checkbox next to the Runtime instance.</li>
+        <li>Click <b>Associate</b>.</li>
+      </ol>
+      <details class="fix">
+        <summary><span class="caret">▶</span><span class="wtag">⚠ Only if</span> the checkbox is still greyed out after Part A</summary>
+        <div class="fixbody">
+          <p>Make sure the region selector in the watsonx portal shows <b>London</b> before you go to Manage → Services &amp; integrations. A region mismatch still makes the checkbox unclickable.</p>
+        </div>
+      </details>
+    </li>
+    <li class="step done">
+      <span class="badge">✓</span>
+      <div class="stitle">Checkpoint — the Runtime is listed under "IBM services"</div>
+      <p>Open the <b>IBM services</b> tab of Services &amp; integrations and confirm your Runtime appears. Continue to Step 10.</p>
+    </li>
+  </ol>
+</section>
+
+<!-- ============================ 10 VECTOR STORE ============================ -->
+<section id="vectorstore">
+  <div class="sec-eyebrow">STEP 10 <span class="time">· PHASE 3</span></div>
+  <h2>Connect the project to Milvus</h2>
+  <p class="intro">Start a vector index asset, choose watsonx.data Milvus as the store, and create the connection using your API key.</p>
+
+  <ol class="steps">
+    <li class="step">
+      <span class="badge">1</span>
+      <div class="stitle">Open "Ground gen AI with vectorized documents"</div>
+      <ol class="substeps">
+        <li>Inside your sandbox project, click the <b>Assets</b> tab.</li>
+        <li>Click <b>New asset</b>.</li>
+        <li>In the asset catalog, find the section <b>Work with foundation models</b>.</li>
+        <li>Click <b>Ground gen AI with vectorized documents</b>.</li>
+      </ol>
+      <details class="fix">
+        <summary><span class="caret">▶</span><span class="wtag">⚠ Only if</span> "Work with foundation models" is missing</summary>
+        <div class="fixbody">
+          <p>Either you are in the wrong project type (Watson Studio instead of watsonx.ai) — go back to Step 08 — or the Runtime is not associated — go back to Step 09. You can also search for <code class="ic">vector</code> in the search bar at the top of the asset catalog.</p>
+        </div>
+      </details>
+    </li>
+    <li class="step">
+      <span class="badge">2</span>
+      <div class="stitle">Select watsonx.data Milvus</div>
+      <ol class="substeps">
+        <li>In the left panel you see three options: <b>In memory</b>, <b>watsonx.data Milvus</b>, <b>Elasticsearch</b>. Click <b>watsonx.data Milvus</b>.</li>
+        <li><b>Define details → Name:</b> anything, for example <code class="ic">milvus-rag-index</code>. Description is optional.</li>
+        <li><b>Vector database details:</b> select <b>Automatically connect to Milvus on watsonx.data</b>.</li>
+        <li><b>watsonx.data instance</b> dropdown: select your instance, for example <code class="ic">itz-wxdata-XXXXXXXX-lgrfa94k</code>.</li>
+        <li><b>Milvus instance</b> dropdown: select your Milvus engine, for example <code class="ic">my-milvus-MUN</code>.</li>
+        <li>Click <b>Create connection</b>.</li>
+      </ol>
+      <details class="fix">
+        <summary><span class="caret">▶</span><span class="wtag">⚠ Only if</span> "watsonx.data Milvus" is greyed out</summary>
+        <div class="fixbody">
+          <p>The Runtime service is not associated. Go back to Step 09, complete it, then return here.</p>
+        </div>
+      </details>
+    </li>
+    <li class="step">
+      <span class="badge">3</span>
+      <div class="stitle">Fill in the connection form</div>
+      <p>"Create connection" opens <b>Connect to a data source: IBM watsonx.data Milvus</b>. Complete its sections:</p>
+      <ol class="substeps">
+        <li><b>Connection overview → Name:</b> auto-filled (for example <code class="ic">watsonX-data-milvus-my-milvus-MUN</code>). Leave as-is or rename.</li>
+        <li><b>Connection details → Hostname:</b> your Milvus <b>GRPC host</b> from Step 06.</li>
+        <li><b>Port:</b> your <b>GRPC port</b> (typically <code class="ic">31775</code>).</li>
+        <li><b>Database:</b> leave empty (defaults to <code class="ic">default</code>).</li>
+        <li><b>Credentials:</b> when asked Personal vs Shared, select <b>Personal</b>.</li>
+        <li>Click the pencil/edit icon next to the credential field and enter:
+          <ul>
+            <li><b>Username:</b> <code class="ic">ibmlhapikey_</code> followed immediately by your full ITZ email address. Example: <code class="ic">ibmlhapikey_student_lgrfa94k_6ac549b58be887b17d66083d_1@techzone.ibm.com</code>. The <code class="ic">ibmlhapikey_</code> prefix is fixed — do not replace or remove it.</li>
+            <li><b>Password:</b> the API key you created in Step 07.</li>
+          </ul>
+        </li>
+        <li><b>Certificates:</b> check <b>Port is SSL-enabled</b> ✅ (mandatory), then paste the full SSL certificate from your notes into the <b>SSL Certificate</b> field. It contains 3 chained certificates — paste everything from the first <code class="ic">-----BEGIN CERTIFICATE-----</code> to the last <code class="ic">-----END CERTIFICATE-----</code>.</li>
+      </ol>
+      <div class="note must">
+        <div class="nt">Password must be the API key</div>
+        <p>The password is the short API key from Step 07, not an IAM token (a very long JWT string with dots, starting with <code class="ic">eyJ...</code>).</p>
+      </div>
+      <details class="fix tip-d">
+        <summary><span class="caret">▶</span><span class="wtag">💡 Shortcut</span> fill host, port and certificate from a JSON snippet</summary>
+        <div class="fixbody">
+          <p>In the watsonx.data console go to Infrastructure Manager → your Milvus tile → <b>View connect details</b> → <b>Copy JSON snippet</b> (or <b>Export JSON</b>). In the connection form click <b>Enter JSON snippet</b> on the Connection overview page and paste it. This auto-fills hostname, port and SSL certificate.</p>
+          <p>After importing, re-check the password field. The import may overwrite it with an IAM token. If so, clear it and paste your plain API key.</p>
+        </div>
+      </details>
+    </li>
+    <li class="step">
+      <span class="badge">4</span>
+      <div class="stitle">Test and create the connection</div>
+      <ol class="substeps">
+        <li>Click <b>Test connection</b> (top right of the form).</li>
+        <li>If it succeeds, click <b>Create</b>.</li>
+      </ol>
+      <details class="fix">
+        <summary><span class="caret">▶</span><span class="wtag">⚠ Only if</span> the test fails with <code class="ic">token is malformed</code></summary>
+        <div class="fixbody">
+          <p>The password field contains an IAM token, not an API key. Clear it and re-enter your API key.</p>
+        </div>
+      </details>
+      <details class="fix">
+        <summary><span class="caret">▶</span><span class="wtag">⚠ Only if</span> the test fails with <code class="ic">bucket does not exist or credentials are not valid</code></summary>
+        <div class="fixbody">
+          <p>The hostname, port or SSL certificate is incorrect. Re-copy them from <b>View connect details</b>.</p>
+        </div>
+      </details>
+    </li>
+    <li class="step done">
+      <span class="badge">✓</span>
+      <div class="stitle">Checkpoint — the Milvus connection is created</div>
+      <p>You are returned to the vector index setup page. Continue to Step 11.</p>
+    </li>
+  </ol>
+</section>
+
+<!-- ============================ 11 COLLECTION ============================ -->
+<section id="collection">
+  <div class="sec-eyebrow">STEP 11 <span class="time">· PHASE 3 · ~1–3 min processing</span></div>
+  <h2>Create a collection &amp; upload a document</h2>
+  <p class="intro">Choose the database and embedding model, create a collection (like a table in Milvus), and let watsonx.ai chunk and vectorize your document.</p>
+
+  <ol class="steps">
+    <li class="step">
+      <span class="badge">1</span>
+      <div class="stitle">Select the database and embedding model</div>
+      <ol class="substeps">
+        <li><b>Connection</b> dropdown: your new connection should be auto-selected (for example <code class="ic">my-milvus-MUN</code>).</li>
+        <li><b>Database</b> dropdown: select <code class="ic">default</code>.</li>
+        <li><b>Embeddings model</b> dropdown: select <code class="ic">granite-embedding-278m-multilingual</code>. It is IBM's multilingual embedding model and the best choice for a general POC. Slate and multilingual-e5 are also valid.</li>
+        <li>Click <b>Next</b>.</li>
+      </ol>
+    </li>
+    <li class="step">
+      <span class="badge">2</span>
+      <div class="stitle">Create a new collection</div>
+      <ol class="substeps">
+        <li>On <b>Select collection</b>, click <b>New collection</b> (blue button, top right).</li>
+        <li>Enter a collection name, for example <code class="ic">mun</code>. The <code class="ic">wx_</code> prefix is added automatically, so it is saved as <code class="ic">wx_mun</code>.</li>
+        <li>Click <b>Create/Confirm</b>. You are taken to the <b>Create collection</b> page.</li>
+      </ol>
+    </li>
+    <li class="step">
+      <span class="badge">3</span>
+      <div class="stitle">Add your document</div>
+      <p>The collection name is already filled in ✅. Under <b>Add files</b> click <b>Browse</b> and select your document. A simple 1–5 page PDF is recommended for a first test.</p>
+    </li>
+    <li class="step">
+      <span class="badge">4</span>
+      <div class="stitle">Set the retrieval settings</div>
+      <table class="vs">
+        <thead><tr><th>Setting</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Text chunk size</td><td class="good"><code class="ic">512</code></td></tr>
+          <tr><td>Text chunk overlap</td><td class="good"><code class="ic">100</code></td></tr>
+          <tr><td>Split PDF</td><td class="good"><code class="ic">On</code></td></tr>
+          <tr><td>Distance metric</td><td class="good"><code class="ic">COSINE</code></td></tr>
+        </tbody>
+      </table>
+      <div class="note must">
+        <div class="nt">Do NOT leave chunk size at the default 2000</div>
+        <p>Large chunks cause poor retrieval accuracy because each chunk covers too much content and the similarity search cannot pinpoint specific facts. <code class="ic">512</code> with <code class="ic">100</code> overlap is recommended for short-to-medium policy documents.</p>
+      </div>
+      <div class="note must">
+        <div class="nt">Distance metric must be COSINE</div>
+        <p>The default <code class="ic">L2 (Euclidean)</code> is designed for image and numerical data, not text embeddings. Cosine measures the angle between vectors, which captures semantic similarity between sentences.</p>
+      </div>
+    </li>
+    <li class="step">
+      <span class="badge">5</span>
+      <div class="stitle">Create the index</div>
+      <p>Click <b>Create</b> (bottom right). watsonx.ai splits the document into chunks, vectorizes each chunk with the granite embedding model, and writes the vectors into your Milvus collection. This takes about 1–3 minutes for a small document.</p>
+    </li>
+    <li class="step done">
+      <span class="badge">✓</span>
+      <div class="stitle">Checkpoint — the vector index is being created</div>
+      <p>When processing completes you land on the vector index details page. Continue to Step 12.</p>
+    </li>
+  </ol>
+</section>
+
+<!-- ============================ 12 CONFIRM ============================ -->
+<section id="confirm">
+  <div class="sec-eyebrow">STEP 12 <span class="time">· PHASE 3</span></div>
+  <h2>Confirm the index &amp; set Top K</h2>
+  <p class="intro">Verify the index settings, check that chunks were written, and raise Top K so the LLM gets enough context.</p>
+
+  <ol class="steps">
+    <li class="step">
+      <span class="badge">1</span>
+      <div class="stitle">Check the index details</div>
+      <p>On the vector index details page, confirm these values:</p>
+      <table class="vs">
+        <thead><tr><th>Field</th><th>Expected value</th></tr></thead>
+        <tbody>
+          <tr><td>Vector store</td><td><code class="ic">watsonx.data</code></td></tr>
+          <tr><td>Vector store connection</td><td>your connection name (for example <code class="ic">my-milvus-MUN</code>)</td></tr>
+          <tr><td>Embeddings model</td><td><code class="ic">ibm/granite-embedding-278m-multilingual</code></td></tr>
+          <tr><td>Milvus database</td><td><code class="ic">default</code></td></tr>
+          <tr><td>Milvus collection</td><td><code class="ic">wx_mun</code> (or whatever you named it)</td></tr>
+          <tr><td>Text chunk size</td><td><code class="ic">512</code></td></tr>
+          <tr><td>Text chunk overlap</td><td><code class="ic">100</code></td></tr>
+          <tr><td>Split PDF</td><td><code class="ic">On</code></td></tr>
+          <tr><td>Distance metric</td><td><code class="ic">COSINE</code></td></tr>
+        </tbody>
+      </table>
+      <figure class="shot">
+        <!-- swap in: <img src="img/12-index-details.png" alt="Vector index details page showing watsonx.data, granite embedding model, chunk size 512 and COSINE metric"> -->
+        <div role="img" aria-label="Vector index details page showing watsonx.data, granite embedding model, chunk size 512 and COSINE metric" style="height:240px;"></div>
+        <figcaption>Screenshot placeholder: the <b>vector index details</b> page with the values above.</figcaption>
+      </figure>
+    </li>
+    <li class="step">
+      <span class="badge">2</span>
+      <div class="stitle">Check the data</div>
+      <p>Click the <b>Data</b> tab and confirm the document chunks were written.</p>
+    </li>
+    <li class="step">
+      <span class="badge">3</span>
+      <div class="stitle">Raise Top K from 3 to 6</div>
+      <ol class="substeps">
+        <li>Click <b>Edit search settings</b> (next to Search settings).</li>
+        <li>Change <b>Top K</b> from <code class="ic">3</code> to <code class="ic">6</code>.</li>
+        <li>Click <b>Save</b>.</li>
+      </ol>
+      <div class="callout tip">
+        <div class="ct">Why Top K = 6?</div>
+        <p>Top K controls how many chunks Milvus retrieves per query. The default of <code class="ic">3</code> is often too few for policy documents where relevant information is spread across sections. <code class="ic">6</code> gives the LLM more context without overwhelming it.</p>
+      </div>
+    </li>
+    <li class="step done">
+      <span class="badge">✓</span>
+      <div class="stitle">Checkpoint — Phase 3 complete</div>
+      <p>Your document is vectorized and stored in Milvus with tuned retrieval settings. Continue to Step 13.</p>
+    </li>
+  </ol>
+</section>
+
+<!-- ============================ 13 PROMPT LAB ============================ -->
+<section id="promptlab">
+  <div class="sec-eyebrow">STEP 13 <span class="time">· PHASE 4</span></div>
+  <h2>Set up Prompt Lab</h2>
+  <p class="intro">Open Prompt Lab from the vector index, pick a model, make sure the index is attached as grounding, and add a system prompt that keeps answers faithful to the document.</p>
+
+  <ol class="steps">
+    <li class="step">
+      <span class="badge">1</span>
+      <div class="stitle">Open Prompt Lab from the vector index</div>
+      <p>Go to your project → <b>Assets</b> tab → click <code class="ic">milvus-rag-index</code>. In the right sidebar, click <b>Open in Prompt Lab</b>.</p>
+      <div class="note">
+        <div class="nt">Always open it this way</div>
+        <p>This automatically attaches <code class="ic">milvus-rag-index</code> as the grounding source. If you open Prompt Lab directly from New asset, attach the index manually in step 3 below.</p>
+      </div>
+    </li>
+    <li class="step">
+      <span class="badge">2</span>
+      <div class="stitle">Select a foundation model</div>
+      <p>Click the <b>Model</b> dropdown in the top bar. Available models depend on your ITZ environment; you may see:</p>
+      <ul>
+        <li><code class="ic">llama-3-3-70b-instruct</code> (Meta)</li>
+        <li><code class="ic">llama-4-maverick-17b-128e-instruct</code> (Meta) — recommended for best accuracy</li>
+        <li><code class="ic">mistral-small-3-1-24b-instruct</code> (Mistral AI)</li>
+      </ul>
+      <p>Select <code class="ic">llama-4-maverick-17b-128e-instruct</code>.</p>
+      <div class="note">
+        <div class="nt">Granite chat models</div>
+        <p>IBM Granite chat models (such as <code class="ic">granite-13b-chat</code>) may not be available in ITZ environments. Use <code class="ic">llama-4-maverick</code> as the best available alternative.</p>
+      </div>
+    </li>
+    <li class="step">
+      <span class="badge">3</span>
+      <div class="stitle">Check that the grounding index is attached</div>
+      <p>Look at the bottom of the chat input area.</p>
+      <ul>
+        <li>If you see a grey tag showing <code class="ic">milvus-rag-index ×</code>, grounding is attached — go to step 4.</li>
+        <li>If the tag is missing: click the <b>document/grounding icon</b> at the bottom left of the chat input (a page with lines), click the <b>Select or create vec...</b> dropdown in the right panel, select <code class="ic">milvus-rag-index</code>, and confirm the tag appears.</li>
+      </ul>
+      <div class="note must">
+        <div class="nt">Re-attach every new session</div>
+        <p>The grounding index does not persist between sessions. Every time you log back in and open Prompt Lab, re-attach <code class="ic">milvus-rag-index</code> before asking questions.</p>
+      </div>
+      <figure class="shot narrow">
+        <!-- swap in: <img src="img/13-grounding-tag.png" alt="Prompt Lab chat input with the milvus-rag-index grounding tag attached"> -->
+        <div role="img" aria-label="Prompt Lab chat input with the milvus-rag-index grounding tag attached" style="height:240px;"></div>
+        <figcaption>Screenshot placeholder: the chat input with the <b>milvus-rag-index ×</b> tag attached.</figcaption>
+      </figure>
+    </li>
+    <li class="step">
+      <span class="badge">4</span>
+      <div class="stitle">Add the system prompt</div>
+      <p>A system prompt tells the LLM to stay faithful to the retrieved context and not use its own training knowledge.</p>
+      <ol class="substeps">
+        <li>Click the <b>⚙️ gear icon</b> in the top-right toolbar (tooltip: "Edit system prompt").</li>
+        <li>Paste the following system prompt:
+          <div class="cmd prompt"><pre><code>You are a helpful assistant answering questions about a
+university policy document. Answer ONLY based on the document
+context retrieved and provided to you. Do not use any outside
+knowledge or training data. If the answer appears in the
+context, quote the relevant text exactly and precisely.
+If the answer is not found in the context, respond with:
+"I cannot find that information in the provided document."</code></pre></div>
+        </li>
+        <li>Close the system prompt dialog.</li>
+      </ol>
+      <div class="note">
+        <div class="nt">Why it matters</div>
+        <p>Without a system prompt, the LLM may answer "10 business days" when the document clearly says "15 business days" — it overrides retrieved context with its own training data. Enter it again each new session unless you save the prompt in Step 14.</p>
+      </div>
+    </li>
+    <li class="step done">
+      <span class="badge">✓</span>
+      <div class="stitle">Checkpoint — model chosen, index attached, system prompt set</div>
+      <p>Prompt Lab is ready to answer from your document. Continue to Step 14.</p>
+    </li>
+  </ol>
+</section>
+
+<!-- ============================ 14 ASK ============================ -->
+<section id="ask">
+  <div class="sec-eyebrow">STEP 14 <span class="time">· PHASE 4</span></div>
+  <h2>Ask questions &amp; save the prompt</h2>
+  <p class="intro">Query your document, read the Sources section to tell retrieval problems from generation problems, and save your prompt so you don't re-enter it.</p>
+
+  <ol class="steps">
+    <li class="step">
+      <span class="badge">1</span>
+      <div class="stitle">Ask a question</div>
+      <p>Type a question in the <b>Type something...</b> chat input and press <kbd>Enter</kbd>. The pipeline will:</p>
+      <ul>
+        <li>Convert your question to a vector using the embedding model</li>
+        <li>Search Milvus for the 6 most similar chunks (Top K = 6)</li>
+        <li>Pass those chunks to the LLM as context</li>
+        <li>Generate an answer grounded in your document</li>
+      </ul>
+      <p>Example questions for the MUN Code of Conduct document (use your own questions if you indexed a different file):</p>
+      <table class="vs">
+        <thead><tr><th>Question</th><th>Expected answer</th></tr></thead>
+        <tbody>
+          <tr><td>What are the consequences for plagiarism?</td><td>Formal warning up to expulsion</td></tr>
+          <tr><td>How many business days does a student have to submit a written appeal?</td><td>15 business days</td></tr>
+          <tr><td>What support resources are available to students?</td><td>Counselling Centre, Student Advocacy Office, Ombudsperson, etc.</td></tr>
+          <tr><td>What behaviours violate academic integrity?</td><td>Plagiarism, cheating, fabrication, contract cheating, etc.</td></tr>
+          <tr><td>What is the appeals process?</td><td>Submit written appeal to Senate Appeals Committee within 15 business days</td></tr>
+        </tbody>
+      </table>
+      <figure class="shot">
+        <!-- swap in: <img src="img/14-grounded-answer.png" alt="Prompt Lab answer with a Sources section listing the indexed document"> -->
+        <div role="img" aria-label="Prompt Lab answer with a Sources section listing the indexed document" style="height:240px;"></div>
+        <figcaption>Screenshot placeholder: a grounded answer with the <b>Sources</b> section visible.</figcaption>
+      </figure>
+    </li>
+    <li class="step">
+      <span class="badge">2</span>
+      <div class="stitle">Read the Sources section</div>
+      <p>Each answer includes a <b>Sources</b> section showing which document the chunks came from, confirming Milvus retrieval is working.</p>
+      <table class="vs">
+        <thead><tr><th>What you see</th><th>What failed</th><th>How to improve</th></tr></thead>
+        <tbody>
+          <tr><td>Sources section is empty</td><td class="bad">Retrieval (Milvus)</td><td>Smaller chunk size (<code class="ic">512</code>), COSINE metric, higher Top K (<code class="ic">6</code>), index attached</td></tr>
+          <tr><td>Sources show the document but the answer is wrong</td><td class="bad">Generation (LLM / prompt)</td><td>System prompt, Temperature <code class="ic">0</code>, correct model</td></tr>
+        </tbody>
+      </table>
+    </li>
+    <li class="step">
+      <span class="badge">3</span>
+      <div class="stitle">Save your prompt</div>
+      <ol class="substeps">
+        <li>Click <b>Unsaved</b> in the top bar.</li>
+        <li>Click <b>Save as</b>.</li>
+        <li>Select <b>Prompt</b> (not Session).</li>
+        <li>Name it <code class="ic">milvus-rag-prompt</code>.</li>
+        <li>Click <b>Save</b>.</li>
+      </ol>
+      <p>Next session, find it under <b>Saved prompts</b> in the left sidebar (the <code class="ic">[...]</code> icon).</p>
+    </li>
+    <li class="step done">
+      <span class="badge">✓</span>
+      <div class="stitle">Checkpoint — you have a working end-to-end RAG pipeline</div>
+      <p>Your questions return answers grounded in your document, with Sources shown.</p>
+    </li>
+  </ol>
+
+  <details class="fix tip-d">
+    <summary><span class="caret">▶</span><span class="wtag">💡 Returning later</span> how to get back to this exact setup after logging out</summary>
+    <div class="fixbody">
+      <ol>
+        <li>Go to <a class="inline" href="https://dataplatform.cloud.ibm.com/wx/home">dataplatform.cloud.ibm.com/wx/home</a>.</li>
+        <li>Confirm the region is <b>London</b> (top right).</li>
+        <li>Projects → open the sandbox project.</li>
+        <li>Assets → click <code class="ic">milvus-rag-index</code> → <b>Open in Prompt Lab</b>.</li>
+        <li>Re-attach <code class="ic">milvus-rag-index</code> grounding if it is not auto-attached.</li>
+        <li>Click the ⚙️ gear and re-enter the system prompt (or load the saved prompt).</li>
+        <li>If you get a <code class="ic">401 Authorization failed</code> error, your API key expired. Go to <a class="inline" href="https://cloud.ibm.com/iam/apikeys">cloud.ibm.com/iam/apikeys</a>, create a new key, and update the password in the <code class="ic">watsonX-data-milvus-my-milvus-MUN</code> connection asset.</li>
+      </ol>
+    </div>
+  </details>
+</section>
+
+<!-- ============================ RECAP ============================ -->
+<section id="recap">
+  <img class="bob-cheer" src="img/bob.png" alt="Bob cheering">
+  <div class="sec-eyebrow">★ YOU MADE IT</div>
+  <h2>Lab recap &amp; what you achieved</h2>
+  <p class="intro">You built a retrieval-augmented generation pipeline from storage to answers: a document is chunked and embedded, stored in Milvus, and used to ground a watsonx.ai foundation model.</p>
+
+  <ul>
+    <li><b>Provisioned Milvus:</b> registered a COS bucket in watsonx.data using HMAC keys and the correct regional endpoint, then added a running Starter Milvus engine.</li>
+    <li><b>Connected watsonx.ai to Milvus:</b> associated the Runtime with the sandbox project and created an authenticated, SSL-enabled connection with an IBM Cloud API key.</li>
+    <li><b>Vectorized a document:</b> chunked it at 512/100 with COSINE distance and the granite embedding model, and raised Top K to 6.</li>
+    <li><b>Queried it with an LLM:</b> grounded Prompt Lab on your index, added a system prompt, and used the Sources section to tell retrieval problems from generation problems.</li>
+  </ul>
+
+  <div class="callout tip withbob">
+    <img src="img/bob-head.png" alt="Bob">
+    <div>
+      <div class="ct">The pattern is portable</div>
+      <p>Store, index, ask. The same three moves — a Milvus collection, an embedding model, and a grounded prompt — apply to any document set. Swap the file and the system prompt and you have a new Q&amp;A system.</p>
+    </div>
+  </div>
+
+  <h3>Architecture summary</h3>
+  <div class="cmd noncopy"><pre><code>MUN_Code_of_Conduct.pdf (or any document)
+            │
+            ▼
+  watsonx.ai Embedding Model
+  ibm/granite-embedding-278m-multilingual
+  (chunks document → converts each chunk to a vector)
+            │
+            ▼
+  Milvus Vector DB — collection: wx_mun
+  hosted in watsonx.data (itz-wxdata-...)
+  backed by IBM Cloud Object Storage (itz-cos-...)
+            │
+            ▼  ← vector similarity search at query time
+  watsonx.ai LLM — Prompt Lab
+  (itz-ml-... Runtime, London region)
+            │
+            ▼
+  Answer grounded in document content</code></pre></div>
+
+  <h3>Quick reference</h3>
+  <table class="vs">
+    <thead><tr><th>Item</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>watsonx.ai portal</td><td><a class="inline" href="https://dataplatform.cloud.ibm.com/wx/home">dataplatform.cloud.ibm.com/wx/home</a></td></tr>
+      <tr><td>IBM Cloud Resource list</td><td><a class="inline" href="https://cloud.ibm.com/resources">cloud.ibm.com/resources</a></td></tr>
+      <tr><td>IBM Cloud API keys</td><td><a class="inline" href="https://cloud.ibm.com/iam/apikeys">cloud.ibm.com/iam/apikeys</a></td></tr>
+      <tr><td>Required region</td><td><b>London (eu-gb)</b> for all ITZ services</td></tr>
+      <tr><td>Milvus username format</td><td><code class="ic">ibmlhapikey_&lt;your-full-itz-email&gt;</code></td></tr>
+      <tr><td>Milvus password</td><td>IBM Cloud API key (short string, NOT a JWT token)</td></tr>
+      <tr><td>Milvus GRPC port</td><td><code class="ic">31775</code></td></tr>
+      <tr><td>SSL</td><td>Required — paste the full certificate chain (3 certs)</td></tr>
+      <tr><td>Supported formats</td><td>PDF, DOCX, PPTX, TXT, JSON, HTML, CSV, YAML, XML, XLSX</td></tr>
+      <tr><td>Embedding model</td><td><code class="ic">granite-embedding-278m-multilingual</code></td></tr>
+      <tr><td>Chunk size / overlap</td><td><code class="ic">512</code> / <code class="ic">100</code> (set in Step 11)</td></tr>
+      <tr><td>Top K</td><td><code class="ic">6</code></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================ TROUBLESHOOTING ============================ -->
+<section id="troubleshooting">
+  <div class="sec-eyebrow">▶ TROUBLESHOOTING</div>
+  <h2>Common problems &amp; fixes</h2>
+  <p class="intro">Each item is one specific symptom with one specific fix.</p>
+
+  <details class="fix">
+    <summary><span class="caret">▶</span><span class="wtag">⚠ Only if</span> "Ground gen AI with vectorized documents" is not visible</summary>
+    <div class="fixbody">
+      <p>You are in the wrong project type (Watson Studio). Use the sandbox project at <code class="ic">/wx/home</code> in the London region (Step 08).</p>
+    </div>
+  </details>
+
+  <details class="fix">
+    <summary><span class="caret">▶</span><span class="wtag">⚠ Only if</span> "watsonx.data Milvus" is greyed out</summary>
+    <div class="fixbody">
+      <p>The Runtime service is not associated. Complete Step 09, including the "Launch in IBM watsonx" pre-registration in Part A.</p>
+    </div>
+  </details>
+
+  <details class="fix">
+    <summary><span class="caret">▶</span><span class="wtag">⚠ Only if</span> the Associate service list is empty</summary>
+    <div class="fixbody">
+      <p>Wrong region (for example Dallas instead of London). Switch the region selector to <b>London</b> in the top right of the watsonx portal.</p>
+    </div>
+  </details>
+
+  <details class="fix">
+    <summary><span class="caret">▶</span><span class="wtag">⚠ Only if</span> the Runtime checkbox is greyed out in Associate service</summary>
+    <div class="fixbody">
+      <p>ITZ permissions restriction. Use the "Launch in IBM watsonx" workaround in Step 09 Part A, and confirm the region is London.</p>
+    </div>
+  </details>
+
+  <details class="fix">
+    <summary><span class="caret">▶</span><span class="wtag">⚠ Only if</span> the COS storage test connection fails</summary>
+    <div class="fixbody">
+      <p>Wrong endpoint or bucket region mismatch. Check the bucket's <b>Configuration</b> tab for its actual region, select that <b>Region</b> first, then use the matching endpoint from the table in Step 05.</p>
+    </div>
+  </details>
+
+  <details class="fix">
+    <summary><span class="caret">▶</span><span class="wtag">⚠ Only if</span> creating the COS credential gives an error</summary>
+    <div class="fixbody">
+      <p>Make sure <b>Control by Secrets Manager</b> is toggled OFF and <b>Include HMAC Credential</b> is ON (Step 04).</p>
+    </div>
+  </details>
+
+  <details class="fix">
+    <summary><span class="caret">▶</span><span class="wtag">⚠ Only if</span> the Milvus test connection fails with <code class="ic">token is malformed</code></summary>
+    <div class="fixbody">
+      <p>An IAM token was used as the password instead of an API key. Clear the password field and paste the plain API key from <a class="inline" href="https://cloud.ibm.com/iam/apikeys">cloud.ibm.com/iam/apikeys</a>.</p>
+    </div>
+  </details>
+
+  <details class="fix">
+    <summary><span class="caret">▶</span><span class="wtag">⚠ Only if</span> the Milvus test connection fails with <code class="ic">401 Unauthorized</code></summary>
+    <div class="fixbody">
+      <p>Wrong username format or wrong API key. The username must be <code class="ic">ibmlhapikey_&lt;full-email&gt;</code>. Create a fresh API key if unsure.</p>
+    </div>
+  </details>
+
+  <details class="fix">
+    <summary><span class="caret">▶</span><span class="wtag">⚠ Only if</span> you cannot create new services (permission error)</summary>
+    <div class="fixbody">
+      <p>Your ITZ account has restricted permissions. Do not create new services — use the pre-provisioned ITZ instances only.</p>
+    </div>
+  </details>
+
+  <details class="fix">
+    <summary><span class="caret">▶</span><span class="wtag">⚠ Only if</span> you get a <code class="ic">401 Authorization failed</code> grounding error</summary>
+    <div class="fixbody">
+      <p>Your API key expired between sessions. Create a new API key at <a class="inline" href="https://cloud.ibm.com/iam/apikeys">cloud.ibm.com/iam/apikeys</a> and update the password in the connection asset.</p>
+    </div>
+  </details>
+
+  <details class="fix">
+    <summary><span class="caret">▶</span><span class="wtag">⚠ Only if</span> you see a <code class="ic">{"loginUrl":"/auth/iamid/login..."}</code> error</summary>
+    <div class="fixbody">
+      <p>Your session timed out. Log back in at <a class="inline" href="https://dataplatform.cloud.ibm.com/wx/home">dataplatform.cloud.ibm.com/wx/home</a>.</p>
+    </div>
+  </details>
+
+  <details class="fix">
+    <summary><span class="caret">▶</span><span class="wtag">⚠ Only if</span> the LLM gives a wrong answer despite correct retrieval</summary>
+    <div class="fixbody">
+      <p>The model is overriding retrieved context. Add the system prompt (Step 13) and set Temperature to <code class="ic">0</code>.</p>
+    </div>
+  </details>
+
+  <details class="fix">
+    <summary><span class="caret">▶</span><span class="wtag">⚠ Only if</span> the Sources section is empty in the response</summary>
+    <div class="fixbody">
+      <p>Retrieval returned no chunks. Verify <code class="ic">milvus-rag-index</code> is attached, check Top K is <code class="ic">6</code>, and re-test the index on its Test tab.</p>
+    </div>
+  </details>
+
+  <details class="fix">
+    <summary><span class="caret">▶</span><span class="wtag">⚠ Only if</span> the grounding index is not attached after login</summary>
+    <div class="fixbody">
+      <p>It does not persist between sessions. Re-attach <code class="ic">milvus-rag-index</code> every session via the grounding icon (Step 13).</p>
+    </div>
+  </details>
+
+  <footer>Milvus + watsonx.ai RAG Lab · IBM Technology Zone edition</footer>
+</section>
+
+</div>
+</main>
+</div>
+
+<script>
+  function setOS(os){
+    document.documentElement.setAttribute("data-os",os);
+    document.querySelectorAll(".os-switch button").forEach(function(b){b.classList.toggle("active",b.getAttribute("data-set")===os);});
+  }
+  document.querySelectorAll(".os-switch button").forEach(function(b){b.addEventListener("click",function(){setOS(b.getAttribute("data-set"));});});
+  (function(){
+    var saved=localStorage.getItem("os");
+    if(saved)setOS(saved);
+    else{var p=navigator.platform.toLowerCase();if(p.includes("win"))setOS("win");else if(p.includes("linux"))setOS("linux");else setOS("mac");}
+  })();
+  document.querySelectorAll(".os-switch button").forEach(function(b){b.addEventListener("click",function(){localStorage.setItem("os",b.getAttribute("data-set"));});});
+  document.querySelectorAll(".cmd:not(.noncopy)").forEach(function(block){
+    var btn=document.createElement("button");btn.className="copy";btn.textContent="Copy";
+    btn.addEventListener("click",function(){
+      var text=block.querySelector("code").innerText;
+      navigator.clipboard.writeText(text).then(function(){
+        btn.textContent="Copied!";btn.classList.add("done");
+        setTimeout(function(){btn.textContent="Copy";btn.classList.remove("done");},1400);
+      });
+    });
+    block.appendChild(btn);
+  });
+  var links=Array.from(document.querySelectorAll("#nav a"));
+  var sections=links.map(function(a){return document.querySelector(a.getAttribute("href"));});
+  function onScroll(){
+    var y=window.scrollY+80,current=0;
+    sections.forEach(function(s,i){if(s&&s.offsetTop<=y)current=i;});
+    links.forEach(function(l,i){l.classList.toggle("active",i===current);});
+  }
+  window.addEventListener("scroll",onScroll,{passive:true});onScroll();
+  var menuBtn=document.getElementById("menuBtn"),sidebar=document.getElementById("sidebar");
+  menuBtn.addEventListener("click",function(){sidebar.classList.toggle("open");});
+  document.querySelectorAll("#nav a").forEach(function(a){a.addEventListener("click",function(){if(window.innerWidth<=960)sidebar.classList.remove("open");});});
+</script>
+</body>
+</html>
